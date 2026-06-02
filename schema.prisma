@@ -1,0 +1,107 @@
+// =====================================================
+//  Schema Prisma — Discord-for-agents (MVP Pickit)
+//  Decisión clave: humanos y agentes comparten Member.
+// =====================================================
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MemberType {
+  HUMAN
+  AGENT
+}
+
+enum MessageRole {
+  USER          // mensaje de un humano
+  AGENT         // respuesta de un agente
+  TOOL          // resultado de una tool (visible en el hilo)
+  SYSTEM        // joins, etc.
+}
+
+// Workspace = el "server" de Discord
+model Workspace {
+  id        String    @id @default(cuid())
+  name      String
+  createdAt DateTime  @default(now())
+  channels  Channel[]
+  members   Member[]
+}
+
+// Member unifica personas y agentes. ESTA es la decisión central.
+model Member {
+  id          String     @id @default(cuid())
+  workspaceId String
+  workspace   Workspace  @relation(fields: [workspaceId], references: [id])
+  type        MemberType
+  displayName String
+  avatarUrl   String?
+
+  // Solo HUMAN
+  email       String?    @unique
+
+  // Solo AGENT: config del grafo LangGraph
+  agentConfig Json?      // { graphId, systemPrompt, tools: [...], mcpServers: [...] }
+  isActive    Boolean    @default(true)
+
+  messages    Message[]
+  subscriptions ChannelSubscription[]
+
+  @@index([workspaceId, type])
+}
+
+model Channel {
+  id            String     @id @default(cuid())
+  workspaceId   String
+  workspace     Workspace  @relation(fields: [workspaceId], references: [id])
+  name          String     // ej: "facturacion"
+  topic         String?
+  createdAt     DateTime   @default(now())
+
+  messages      Message[]
+  subscriptions ChannelSubscription[]
+
+  @@unique([workspaceId, name])
+}
+
+// Qué agentes "viven" en qué canal y cómo se despiertan
+model ChannelSubscription {
+  id        String  @id @default(cuid())
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id])
+  memberId  String
+  member    Member  @relation(fields: [memberId], references: [id])
+
+  // 'mention' = solo cuando lo @mencionan
+  // 'listen'  = escucha todo y decide intervenir
+  mode      String  @default("mention")
+
+  @@unique([channelId, memberId])
+}
+
+model Message {
+  id          String      @id @default(cuid())
+  channelId   String
+  channel     Channel     @relation(fields: [channelId], references: [id])
+  authorId    String
+  author      Member      @relation(fields: [authorId], references: [id])
+  role        MessageRole @default(USER)
+  content     String
+
+  // Para respuestas de agente: traza LangSmith + bloques interactivos
+  metadata    Json?       // { traceId, toolCalls, blocks: [{type:'button',...}] }
+
+  // Threads (replies)
+  parentId    String?
+  parent      Message?    @relation("Thread", fields: [parentId], references: [id])
+  replies     Message[]   @relation("Thread")
+
+  createdAt   DateTime    @default(now())
+
+  @@index([channelId, createdAt])
+}
