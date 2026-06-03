@@ -8,7 +8,8 @@
     "start:dev": "nest start --watch",
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
-    "smoke:fase2": "tsx scripts/smoke-fase2.ts"
+    "smoke:fase2": "tsx scripts/smoke-fase2.ts",
+    "smoke:fase3": "tsx scripts/smoke-fase3.ts"
   },
   "dependencies": {
     "@langchain/anthropic": "^0.3.11",

@@ -5,7 +5,7 @@
 //  ejecuta tools y devuelve la respuesta como mensaje normal.
 // =====================================================
 
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { PrismaService } from '../prisma.service';
 import { AgentEventBus } from './agent-event-bus.service';
 import { MessageService } from '../message.service';
@@ -13,6 +13,8 @@ import { AgentRunner } from './agent-runner'; // wrapper LangGraph
 
 @Injectable()
 export class AgentOrchestrator implements OnModuleInit {
+  private readonly logger = new Logger(AgentOrchestrator.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly eventBus: AgentEventBus,
@@ -21,8 +23,13 @@ export class AgentOrchestrator implements OnModuleInit {
   ) {}
 
   onModuleInit() {
-    // Cada mensaje de humano que el Gateway publicó pasa por acá
-    this.eventBus.onDispatch((msg) => this.handle(msg));
+    // Cada mensaje de humano que el Gateway publicó pasa por acá.
+    // Catch global: un agente que rompe NO debe crashear el API.
+    this.eventBus.onDispatch((msg) =>
+      this.handle(msg).catch((e) =>
+        this.logger.error(`handle msg=${msg.id} fallo: ${e?.message ?? e}`),
+      ),
+    );
   }
 
   private async handle(msg: {
@@ -44,8 +51,16 @@ export class AgentOrchestrator implements OnModuleInit {
       return mentioned.includes(s.member.displayName);   // solo si lo @mencionan
     });
 
-    // 2. Despertar cada agente en paralelo (no se bloquean entre sí)
-    await Promise.all(toWake.map((s) => this.runAgent(s.member, msg)));
+    // 2. Despertar cada agente en paralelo (no se bloquean entre sí).
+    //    allSettled: el fallo de un agente NO impide que respondan los demás.
+    const results = await Promise.allSettled(
+      toWake.map((s) => this.runAgent(s.member, msg)),
+    );
+    for (const r of results) {
+      if (r.status === 'rejected') {
+        this.logger.error(`runAgent fallo: ${r.reason?.message ?? r.reason}`);
+      }
+    }
   }
 
   private async runAgent(agent: any, triggerMsg: any) {

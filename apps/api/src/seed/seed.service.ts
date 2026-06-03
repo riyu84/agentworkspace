@@ -10,6 +10,15 @@ const WORKSPACE_NAME = 'Pickit';
 const CHANNEL_NAME = 'general';
 const HUMAN_A = { email: 'ana@pickit.test', displayName: 'ana' };
 const HUMAN_B = { email: 'beto@pickit.test', displayName: 'beto' };
+const AGENT = {
+  id: 'agent_facturacion_seed',
+  displayName: 'agente-facturacion',
+  systemPrompt:
+    'Sos el agente de facturacion de Pickit. Cuando te pidan validar una factura, ' +
+    'usa la tool validar_factura con el CUIT y monto que te pasen. Responde en una ' +
+    'frase corta con el estado y la percepcion de IIBB que devuelve la tool.',
+  tools: ['validar_factura'],
+};
 
 @Injectable()
 export class SeedService {
@@ -51,6 +60,26 @@ export class SeedService {
       create: { workspaceId: workspace.id, name: CHANNEL_NAME, topic: 'canal general' },
     });
 
-    return { workspace, members: [ana, beto], channel };
+    const agent = await this.prisma.member.upsert({
+      where: { id: AGENT.id },
+      update: {
+        agentConfig: { systemPrompt: AGENT.systemPrompt, tools: AGENT.tools },
+      },
+      create: {
+        id: AGENT.id,
+        workspaceId: workspace.id,
+        type: 'AGENT',
+        displayName: AGENT.displayName,
+        agentConfig: { systemPrompt: AGENT.systemPrompt, tools: AGENT.tools },
+      },
+    });
+
+    await this.prisma.channelSubscription.upsert({
+      where: { channelId_memberId: { channelId: channel.id, memberId: agent.id } },
+      update: { mode: 'mention' },
+      create: { channelId: channel.id, memberId: agent.id, mode: 'mention' },
+    });
+
+    return { workspace, members: [ana, beto], channel, agent };
   }
 }
