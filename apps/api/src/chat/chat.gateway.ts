@@ -13,18 +13,21 @@ import {
   OnGatewayConnection,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { MessageService } from '../message.service';
 import { AgentEventBus } from '../agent/agent-event-bus.service';
+import { AuthService } from '../auth/auth.service';
 
 @Injectable()
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/chat' })
 export class ChatGateway implements OnGatewayConnection {
   @WebSocketServer() server: Server;
+  private readonly logger = new Logger(ChatGateway.name);
 
   constructor(
     private readonly messages: MessageService,
     private readonly eventBus: AgentEventBus, // wrapper sobre Redis pub/sub
+    private readonly auth: AuthService,
   ) {
     // El Orchestrator emite respuestas de agentes por acá -> al canal
     this.eventBus.onAgentMessage((msg) => {
@@ -37,9 +40,24 @@ export class ChatGateway implements OnGatewayConnection {
   }
 
   handleConnection(client: Socket) {
-    // TODO: validar JWT desde handshake.auth.token
-    const memberId = client.handshake.auth?.memberId;
-    client.data.memberId = memberId;
+    // Valida JWT desde handshake.auth.token. Si falta o es invalido,
+    // desconecta el socket inmediatamente.
+    const token = client.handshake.auth?.token;
+    if (!token || typeof token !== 'string') {
+      this.logger.warn(`socket ${client.id} sin token -> disconnect`);
+      client.emit('auth:error', { reason: 'missing_token' });
+      client.disconnect(true);
+      return;
+    }
+    try {
+      const payload = this.auth.verify(token);
+      client.data.memberId = payload.sub;
+      client.data.displayName = payload.displayName;
+    } catch {
+      this.logger.warn(`socket ${client.id} token invalido -> disconnect`);
+      client.emit('auth:error', { reason: 'invalid_token' });
+      client.disconnect(true);
+    }
   }
 
   @SubscribeMessage('channel:join')

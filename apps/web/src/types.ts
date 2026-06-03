@@ -22,6 +22,15 @@ export interface Workspace {
   channels: Channel[];
 }
 
+export interface LoginResponse {
+  token: string;
+  member: Member;
+}
+
+export interface MeResponse {
+  member: Member;
+}
+
 export interface ToolCall {
   name: string;
   args: Record<string, unknown>;
