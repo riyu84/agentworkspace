@@ -9,7 +9,8 @@
     "prisma:generate": "prisma generate",
     "prisma:migrate": "prisma migrate dev",
     "smoke:fase2": "tsx scripts/smoke-fase2.ts",
-    "smoke:fase3": "tsx scripts/smoke-fase3.ts"
+    "smoke:fase3": "tsx scripts/smoke-fase3.ts",
+    "smoke:fase4": "tsx scripts/smoke-fase4.ts"
   },
   "dependencies": {
     "@langchain/anthropic": "^0.3.11",
@@ -32,6 +33,7 @@
     "@nestjs/cli": "^10.4.9",
     "@nestjs/schematics": "^10.2.3",
     "@types/node": "^22.10.5",
+    "playwright": "^1.56.1",
     "prisma": "^5.22.0",
     "socket.io-client": "^4.8.1",
     "ts-loader": "^9.5.1",

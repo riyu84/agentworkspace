@@ -1,4 +1,4 @@
-import { Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { SeedService } from './seed.service';
 import { PrismaService } from '../prisma.service';
 
@@ -20,5 +20,17 @@ export class SeedController {
       where: { id },
       include: { members: true, channels: true },
     });
+  }
+
+  @Get('channels/:id/messages')
+  async getMessages(@Param('id') id: string, @Query('limit') limit?: string) {
+    const take = Math.min(Math.max(parseInt(limit ?? '50', 10) || 50, 1), 200);
+    const rows = await this.prisma.message.findMany({
+      where: { channelId: id },
+      orderBy: { createdAt: 'desc' },
+      take,
+      include: { author: true },
+    });
+    return rows.reverse();
   }
 }
