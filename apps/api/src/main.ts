@@ -1,4 +1,11 @@
 import 'reflect-metadata';
+import { config as loadEnv } from 'dotenv';
+import { join } from 'path';
+
+// .env vive en la raíz del monorepo; fallback al cwd para soportar otros layouts.
+loadEnv({ path: join(__dirname, '..', '..', '..', '..', '.env') });
+loadEnv();
+
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 

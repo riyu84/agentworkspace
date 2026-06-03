@@ -5,7 +5,9 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  zod: 3.23.8
+  '@langchain/core': 0.3.57
+  zod-to-json-schema: 3.24.6
+  zod: 3.24.4
 
 importers:
 
@@ -15,13 +17,13 @@ importers:
     dependencies:
       '@langchain/anthropic':
         specifier: ^0.3.11
-        version: 0.3.34(@langchain/core@0.3.80)(zod@3.23.8)
+        version: 0.3.34(@langchain/core@0.3.57)(zod@3.24.4)
       '@langchain/core':
-        specifier: ^0.3.30
-        version: 0.3.80
+        specifier: 0.3.57
+        version: 0.3.57
       '@langchain/langgraph':
         specifier: ^0.2.36
-        version: 0.2.74(@langchain/core@0.3.80)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod-to-json-schema@3.25.2(zod@3.23.8))
+        version: 0.2.74(@langchain/core@0.3.57)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod-to-json-schema@3.24.6(zod@3.24.4))
       '@nestjs/common':
         specifier: ^10.4.15
         version: 10.4.22(reflect-metadata@0.2.2)(rxjs@7.8.2)
@@ -40,6 +42,9 @@ importers:
       '@prisma/client':
         specifier: ^5.22.0
         version: 5.22.0(prisma@5.22.0)
+      dotenv:
+        specifier: ^16.4.7
+        version: 16.6.1
       ioredis:
         specifier: ^5.4.1
         version: 5.11.0
@@ -53,8 +58,8 @@ importers:
         specifier: ^4.8.1
         version: 4.8.3
       zod:
-        specifier: 3.23.8
-        version: 3.23.8
+        specifier: 3.24.4
+        version: 3.24.4
     devDependencies:
       '@nestjs/cli':
         specifier: ^10.4.9
@@ -130,7 +135,7 @@ packages:
     resolution: {integrity: sha512-zIdPOcrCVEI8t3Di40nH4z9EoeyGZfXbYSvWdDLsB/KkaSYMnEgC7gmcgWu83g2NTn1ZTpbMvpdttWDGGIk6zw==}
     hasBin: true
     peerDependencies:
-      zod: 3.23.8
+      zod: 3.24.4
     peerDependenciesMeta:
       zod:
         optional: true
@@ -418,22 +423,22 @@ packages:
     resolution: {integrity: sha512-8bOW1A2VHRCjbzdYElrjxutKNs9NSIxYRGtR+OJWVzluMqoKKh2NmmFrpPizEyqCUEG2tTq5xt6XA1lwfqMJRA==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@langchain/core': '>=0.3.58 <0.4.0'
+      '@langchain/core': 0.3.57
 
-  '@langchain/core@0.3.80':
-    resolution: {integrity: sha512-vcJDV2vk1AlCwSh3aBm/urQ1ZrlXFFBocv11bz/NBUfLWD5/UDNMzwPdaAd2dKvNmTWa9FM2lirLU3+JCf4cRA==}
+  '@langchain/core@0.3.57':
+    resolution: {integrity: sha512-jz28qCTKJmi47b6jqhQ6vYRTG5jRpqhtPQjriRTB5wR8mgvzo6xKs0fG/kExS3ZvM79ytD1npBvgf8i19xOo9Q==}
     engines: {node: '>=18'}
 
   '@langchain/langgraph-checkpoint@0.0.18':
     resolution: {integrity: sha512-IS7zJj36VgY+4pf8ZjsVuUWef7oTwt1y9ylvwu0aLuOn1d0fg05Om9DLm3v2GZ2Df6bhLV1kfWAM0IAl9O5rQQ==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@langchain/core': '>=0.2.31 <0.4.0'
+      '@langchain/core': 0.3.57
 
   '@langchain/langgraph-sdk@0.0.112':
     resolution: {integrity: sha512-/9W5HSWCqYgwma6EoOspL4BGYxGxeJP6lIquPSF4FA0JlKopaUv58ucZC3vAgdJyCgg6sorCIV/qg7SGpEcCLw==}
     peerDependencies:
-      '@langchain/core': '>=0.2.31 <0.4.0'
+      '@langchain/core': 0.3.57
       react: ^18 || ^19
       react-dom: ^18 || ^19
     peerDependenciesMeta:
@@ -448,8 +453,8 @@ packages:
     resolution: {integrity: sha512-oHpEi5sTZTPaeZX1UnzfM2OAJ21QGQrwReTV6+QnX7h8nDCBzhtipAw1cK616S+X8zpcVOjgOtJuaJhXa4mN8w==}
     engines: {node: '>=18'}
     peerDependencies:
-      '@langchain/core': '>=0.2.36 <0.3.0 || >=0.3.40 < 0.4.0'
-      zod-to-json-schema: ^3.x
+      '@langchain/core': 0.3.57
+      zod-to-json-schema: 3.24.6
     peerDependenciesMeta:
       zod-to-json-schema:
         optional: true
@@ -1159,6 +1164,10 @@ packages:
   destroy@1.2.0:
     resolution: {integrity: sha512-2sJGJTaXIIaR1w4iJSNoN0hnMY7Gpc/n8D4qSCJw8QqFWXf7cuAgnEHxBpweaVcPevC2l3KpjYCx3NypQQgaJg==}
     engines: {node: '>= 0.8', npm: 1.2.8000 || >= 1.4.16}
+
+  dotenv@16.6.1:
+    resolution: {integrity: sha512-uBq4egWHTcTt33a72vpSG0z3HnPuIl6NqYcTrKEg2azoEyl2hpW0zqlxysq2pK9HlDIHyHyakeYaYnSAwd8bow==}
+    engines: {node: '>=12'}
 
   dunder-proto@1.0.1:
     resolution: {integrity: sha512-KIN/nDJBQRcXw0MLVhZE9iQHmG68qAVIBg9CqmUYjmQIhgij9U5MFvrqkUL5FbtyyzZuOeOt0zdeRe4UY7ct+A==}
@@ -2337,13 +2346,13 @@ packages:
     resolution: {integrity: sha512-tVpsJW7DdjecAiFpbIB1e3qxIQsE6NoPc5/eTdrbbIC4h0LVsWhnoa3g+m2HclBIujHzsxZ4VJVA+GUuc2/LBw==}
     engines: {node: '>=12'}
 
-  zod-to-json-schema@3.25.2:
-    resolution: {integrity: sha512-O/PgfnpT1xKSDeQYSCfRI5Gy3hPf91mKVDuYLUHZJMiDFptvP41MSnWofm8dnCm0256ZNfZIM7DSzuSMAFnjHA==}
+  zod-to-json-schema@3.24.6:
+    resolution: {integrity: sha512-h/z3PKvcTcTetyjl1fkj79MHNEjm+HpD6NXheWjzOekY7kV+lwDYnHw+ivHkijnCSMz1yJaWBD9vu/Fcmk+vEg==}
     peerDependencies:
-      zod: 3.23.8
+      zod: 3.24.4
 
-  zod@3.23.8:
-    resolution: {integrity: sha512-XBx9AXhXktjUqnepgTiE5flcKIYWi/rme0Eaj+5Y0lftuGBq+jyRu/md4WnuxqgP1ubdpNCsYEYPxrzVHD8d6g==}
+  zod@3.24.4:
+    resolution: {integrity: sha512-OdqJE9UDRPwWsrHjLN2F8bPxvwJBK22EHLWtanu0LSYr5YqzsaaW3RMgmjwr8Rypg5k+meEJdSPXJZXE/yqOMg==}
 
 snapshots:
 
@@ -2379,11 +2388,11 @@ snapshots:
     transitivePeerDependencies:
       - chokidar
 
-  '@anthropic-ai/sdk@0.65.0(zod@3.23.8)':
+  '@anthropic-ai/sdk@0.65.0(zod@3.24.4)':
     dependencies:
       json-schema-to-ts: 3.1.1
     optionalDependencies:
-      zod: 3.23.8
+      zod: 3.24.4
 
   '@babel/code-frame@7.29.7':
     dependencies:
@@ -2619,15 +2628,15 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
 
-  '@langchain/anthropic@0.3.34(@langchain/core@0.3.80)(zod@3.23.8)':
+  '@langchain/anthropic@0.3.34(@langchain/core@0.3.57)(zod@3.24.4)':
     dependencies:
-      '@anthropic-ai/sdk': 0.65.0(zod@3.23.8)
-      '@langchain/core': 0.3.80
+      '@anthropic-ai/sdk': 0.65.0(zod@3.24.4)
+      '@langchain/core': 0.3.57
       fast-xml-parser: 4.5.6
     transitivePeerDependencies:
       - zod
 
-  '@langchain/core@0.3.80':
+  '@langchain/core@0.3.57':
     dependencies:
       '@cfworker/json-schema': 4.1.1
       ansi-styles: 5.2.0
@@ -2639,39 +2648,39 @@ snapshots:
       p-queue: 6.6.2
       p-retry: 4.6.2
       uuid: 10.0.0
-      zod: 3.23.8
-      zod-to-json-schema: 3.25.2(zod@3.23.8)
+      zod: 3.24.4
+      zod-to-json-schema: 3.24.6(zod@3.24.4)
     transitivePeerDependencies:
       - '@opentelemetry/api'
       - '@opentelemetry/exporter-trace-otlp-proto'
       - '@opentelemetry/sdk-trace-base'
       - openai
 
-  '@langchain/langgraph-checkpoint@0.0.18(@langchain/core@0.3.80)':
+  '@langchain/langgraph-checkpoint@0.0.18(@langchain/core@0.3.57)':
     dependencies:
-      '@langchain/core': 0.3.80
+      '@langchain/core': 0.3.57
       uuid: 10.0.0
 
-  '@langchain/langgraph-sdk@0.0.112(@langchain/core@0.3.80)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
+  '@langchain/langgraph-sdk@0.0.112(@langchain/core@0.3.57)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)':
     dependencies:
       '@types/json-schema': 7.0.15
       p-queue: 6.6.2
       p-retry: 4.6.2
       uuid: 9.0.1
     optionalDependencies:
-      '@langchain/core': 0.3.80
+      '@langchain/core': 0.3.57
       react: 18.3.1
       react-dom: 18.3.1(react@18.3.1)
 
-  '@langchain/langgraph@0.2.74(@langchain/core@0.3.80)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod-to-json-schema@3.25.2(zod@3.23.8))':
+  '@langchain/langgraph@0.2.74(@langchain/core@0.3.57)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod-to-json-schema@3.24.6(zod@3.24.4))':
     dependencies:
-      '@langchain/core': 0.3.80
-      '@langchain/langgraph-checkpoint': 0.0.18(@langchain/core@0.3.80)
-      '@langchain/langgraph-sdk': 0.0.112(@langchain/core@0.3.80)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
+      '@langchain/core': 0.3.57
+      '@langchain/langgraph-checkpoint': 0.0.18(@langchain/core@0.3.57)
+      '@langchain/langgraph-sdk': 0.0.112(@langchain/core@0.3.57)(react-dom@18.3.1(react@18.3.1))(react@18.3.1)
       uuid: 10.0.0
-      zod: 3.23.8
+      zod: 3.24.4
     optionalDependencies:
-      zod-to-json-schema: 3.25.2(zod@3.23.8)
+      zod-to-json-schema: 3.24.6(zod@3.24.4)
     transitivePeerDependencies:
       - react
       - react-dom
@@ -3396,6 +3405,8 @@ snapshots:
   depd@2.0.0: {}
 
   destroy@1.2.0: {}
+
+  dotenv@16.6.1: {}
 
   dunder-proto@1.0.1:
     dependencies:
@@ -4602,8 +4613,8 @@ snapshots:
 
   yargs-parser@21.1.1: {}
 
-  zod-to-json-schema@3.25.2(zod@3.23.8):
+  zod-to-json-schema@3.24.6(zod@3.24.4):
     dependencies:
-      zod: 3.23.8
+      zod: 3.24.4
 
-  zod@3.23.8: {}
+  zod@3.24.4: {}
