@@ -1,0 +1,19 @@
+{
+  "name": "discord-for-agents",
+  "private": true,
+  "version": "0.0.0",
+  "packageManager": "pnpm@10.33.0",
+  "scripts": {
+    "api:build": "pnpm --filter api build",
+    "api:dev": "pnpm --filter api start:dev",
+    "web:dev": "pnpm --filter web dev"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "pnpm": {
+    "overrides": {
+      "zod": "3.23.8"
+    }
+  }
+}

@@ -14,8 +14,8 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Injectable } from '@nestjs/common';
-import { MessageService } from './message.service';
-import { AgentEventBus } from './agent/agent-event-bus.service';
+import { MessageService } from '../message.service';
+import { AgentEventBus } from '../agent/agent-event-bus.service';
 
 @Injectable()
 @WebSocketGateway({ cors: { origin: '*' }, namespace: '/chat' })
