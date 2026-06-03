@@ -14,23 +14,33 @@ const AGENT = {
   id: 'agent_facturacion_seed',
   displayName: 'agente-facturacion',
   systemPrompt:
-    'Sos el agente de facturacion de Pickit. Workflow:\n' +
-    '1) Si te piden VALIDAR una factura, usa validar_factura con CUIT y monto, ' +
-    'y responde en una frase corta con el estado y la percepcion de IIBB.\n' +
-    '2) Si te piden APROBAR o EJECUTAR algo con efecto (pagar, enviar, dar de alta, ' +
-    'aprobar): primero llama validar_factura si aplica, despues llama ' +
+    'Sos el agente de facturacion de Pickit. Tools disponibles:\n' +
+    '- validar_factura(cuit, monto): valida y calcula IIBB.\n' +
+    '- solicitar_confirmacion(prompt, options): mostra botones al humano.\n' +
+    '- consultar_proveedor(cuit) [MCP]: trae datos del proveedor.\n' +
+    '- lista_proveedores() [MCP]: lista todos los proveedores.\n' +
+    '\n' +
+    'Workflow:\n' +
+    '1) Si te piden CONSULTAR/QUIEN ES/QUE SE de un proveedor: usa ' +
+    'consultar_proveedor (o lista_proveedores) y responde en una frase ' +
+    'breve con los datos relevantes (nombre, condicion IVA, saldo).\n' +
+    '2) Si te piden VALIDAR una factura, usa validar_factura con CUIT y monto, ' +
+    'y responde con estado y percepcion de IIBB.\n' +
+    '3) Si te piden APROBAR/EJECUTAR algo con efecto (pagar, aprobar): ' +
+    'primero consulta_proveedor + validar_factura si aplica, despues llama ' +
     'solicitar_confirmacion una sola vez con dos opciones: ' +
     '{label:"Aprobar", value:"approve", style:"primary"} y ' +
     '{label:"Cancelar", value:"cancel", style:"danger"}. ' +
     'En el texto repeti la pregunta para humanos sin botones. ' +
     'NO ejecutes la accion antes de la confirmacion.\n' +
-    '3) Cuando el humano responde con "approve" (o un mensaje cuyo contenido ' +
+    '4) Cuando el humano responde con "approve" (o un mensaje cuyo contenido ' +
     'incluya "Aprobar"/"approve"), NUNCA vuelvas a pedir confirmacion. ' +
     'Confirma con un mensaje breve y final tipo "Listo, factura aprobada. ' +
     'Operacion registrada." sin llamar mas tools.\n' +
-    '4) Si el humano responde "cancel" o "Cancelar", abortas con un mensaje ' +
+    '5) Si el humano responde "cancel" o "Cancelar", abortas con un mensaje ' +
     'breve tipo "Operacion cancelada, no se hizo nada."',
   tools: ['validar_factura', 'solicitar_confirmacion'],
+  mcpServers: ['pickit'],
 };
 
 @Injectable()
@@ -73,17 +83,20 @@ export class SeedService {
       create: { workspaceId: workspace.id, name: CHANNEL_NAME, topic: 'canal general' },
     });
 
+    const agentConfig = {
+      systemPrompt: AGENT.systemPrompt,
+      tools: AGENT.tools,
+      mcpServers: AGENT.mcpServers,
+    };
     const agent = await this.prisma.member.upsert({
       where: { id: AGENT.id },
-      update: {
-        agentConfig: { systemPrompt: AGENT.systemPrompt, tools: AGENT.tools },
-      },
+      update: { agentConfig },
       create: {
         id: AGENT.id,
         workspaceId: workspace.id,
         type: 'AGENT',
         displayName: AGENT.displayName,
-        agentConfig: { systemPrompt: AGENT.systemPrompt, tools: AGENT.tools },
+        agentConfig,
       },
     });
 

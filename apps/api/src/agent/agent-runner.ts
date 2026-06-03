@@ -8,6 +8,7 @@ import { ChatAnthropic } from '@langchain/anthropic';
 import { createReactAgent } from '@langchain/langgraph/prebuilt';
 import { tool } from '@langchain/core/tools';
 import { z } from 'zod';
+import { McpClientService } from './mcp-client.service';
 
 // --- Ejemplo de tool real para Pickit ---
 // El agente de #facturacion valida Ingresos Brutos / Percepciones.
@@ -78,16 +79,25 @@ interface InvokeArgs {
 
 @Injectable()
 export class AgentRunner {
+  constructor(private readonly mcp: McpClientService) {}
+
   async invoke(args: InvokeArgs) {
     const llm = new ChatAnthropic({
       model: 'claude-sonnet-4-20250514',
       temperature: 0,
     });
 
-    // Resolver las tools que este agente tiene habilitadas
-    const tools = args.agentConfig.tools
+    // Resolver las tools del registry estatico
+    const localTools = args.agentConfig.tools
       .map((t) => TOOL_REGISTRY[t])
       .filter(Boolean);
+
+    // Y las tools dinamicas que vienen de los MCP servers declarados.
+    const mcpTools = args.agentConfig.mcpServers?.length
+      ? await this.mcp.getToolsForServers(args.agentConfig.mcpServers)
+      : [];
+
+    const tools = [...localTools, ...mcpTools];
 
     // Grafo ReAct prebuilt: razonamiento -> tool -> razonamiento -> respuesta.
     // LangSmith lo traza solo si LANGCHAIN_TRACING_V2=true está en el env.
