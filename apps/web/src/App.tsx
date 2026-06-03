@@ -4,14 +4,43 @@ import { api, WORKSPACE_ID } from './api';
 import { makeSocket } from './socket';
 import type { Channel, Member, Message, Workspace } from './types';
 import { MessageList } from './MessageList';
+import { Login } from './Login';
 
 const TYPING_TTL_MS = 8000;
+const LS_TOKEN = 'auth.token';
+const LS_MEMBER = 'auth.member';
+
+interface Session {
+  token: string;
+  member: Member;
+}
+
+function loadSession(): Session | null {
+  const token = localStorage.getItem(LS_TOKEN);
+  const memberRaw = localStorage.getItem(LS_MEMBER);
+  if (!token || !memberRaw) return null;
+  try {
+    return { token, member: JSON.parse(memberRaw) as Member };
+  } catch {
+    return null;
+  }
+}
+
+function saveSession(s: Session) {
+  localStorage.setItem(LS_TOKEN, s.token);
+  localStorage.setItem(LS_MEMBER, JSON.stringify(s.member));
+}
+
+function clearSession() {
+  localStorage.removeItem(LS_TOKEN);
+  localStorage.removeItem(LS_MEMBER);
+}
 
 export function App() {
+  const [session, setSession] = useState<Session | null>(() => loadSession());
   const [workspace, setWorkspace] = useState<Workspace | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
-  const [meId, setMeId] = useState<string>(() => localStorage.getItem('meId') ?? '');
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState('');
@@ -19,33 +48,36 @@ export function App() {
   const socketRef = useRef<Socket | null>(null);
   const mainRef = useRef<HTMLDivElement>(null);
 
-  // Bootstrap: seed (idempotente) + cargar workspace.
+  // Validar token contra /auth/me al montar; si falla, cerrar sesion.
   useEffect(() => {
-    (async () => {
-      try {
-        await api.seed();
-        const ws = await api.workspace(WORKSPACE_ID);
-        setWorkspace(ws);
-        if (ws.channels.length > 0 && !activeChannelId) setActiveChannelId(ws.channels[0].id);
-        if (!meId) {
-          const firstHuman = ws.members.find((m) => m.type === 'HUMAN');
-          if (firstHuman) {
-            setMeId(firstHuman.id);
-            localStorage.setItem('meId', firstHuman.id);
-          }
-        }
-      } catch (e) {
-        setError(String(e));
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+    if (!session) return;
+    api.me(session.token).catch(() => {
+      clearSession();
+      setSession(null);
+    });
+  }, [session?.token]);
 
-  // Conectar socket cuando hay meId.
+  // Cargar workspace una vez autenticado.
   useEffect(() => {
-    if (!meId) return;
-    const s = makeSocket(meId);
+    if (!session) return;
+    api
+      .workspace(WORKSPACE_ID)
+      .then((ws) => {
+        setWorkspace(ws);
+        if (ws.channels.length > 0 && !activeChannelId) {
+          setActiveChannelId(ws.channels[0].id);
+        }
+      })
+      .catch((e) => setError(String(e)));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [session?.token]);
+
+  // Conectar socket con el token.
+  useEffect(() => {
+    if (!session) return;
+    const s = makeSocket(session.token);
     socketRef.current = s;
+
     s.on('message', (msg: Message) => {
       setMessages((prev) => (prev.some((m) => m.id === msg.id) ? prev : [...prev, msg]));
       if (msg.role === 'AGENT') {
@@ -66,11 +98,16 @@ export function App() {
         });
       }, TYPING_TTL_MS);
     });
+    s.on('auth:error', () => {
+      clearSession();
+      setSession(null);
+    });
+
     return () => {
       s.disconnect();
       socketRef.current = null;
     };
-  }, [meId]);
+  }, [session?.token]);
 
   // Join channel + cargar historial cuando cambia.
   useEffect(() => {
@@ -81,19 +118,18 @@ export function App() {
       .messages(activeChannelId)
       .then(setMessages)
       .catch((e) => setError(String(e)));
-  }, [activeChannelId, meId]);
+  }, [activeChannelId, session?.token]);
 
   // Medir alto disponible para la lista virtualizada.
   useEffect(() => {
     if (!mainRef.current) return;
     const ro = new ResizeObserver((entries) => {
       const h = entries[0].contentRect.height;
-      // restar header (53) + typing (22) + input-row (~58)
       setListHeight(Math.max(120, h - 53 - 22 - 58));
     });
     ro.observe(mainRef.current);
     return () => ro.disconnect();
-  }, []);
+  }, [session?.token]);
 
   const authorById = useMemo(() => {
     const m = new Map<string, Member>();
@@ -102,7 +138,6 @@ export function App() {
   }, [workspace]);
 
   const activeChannel = workspace?.channels.find((c) => c.id === activeChannelId) ?? null;
-  const me = workspace?.members.find((m) => m.id === meId) ?? null;
 
   const typingNames = useMemo(() => {
     return [...typingAgents]
@@ -119,6 +154,22 @@ export function App() {
     setDraft('');
   };
 
+  const handleLogin = (token: string, member: Member) => {
+    const s = { token, member };
+    saveSession(s);
+    setSession(s);
+  };
+
+  const handleLogout = () => {
+    socketRef.current?.disconnect();
+    clearSession();
+    setSession(null);
+    setWorkspace(null);
+    setMessages([]);
+    setActiveChannelId(null);
+  };
+
+  if (!session) return <Login onLogin={handleLogin} />;
   if (error) return <div className="empty-state">error: {error}</div>;
   if (!workspace) return <div className="empty-state">cargando…</div>;
 
@@ -139,19 +190,10 @@ export function App() {
         </div>
         <div className="picker">
           <label>Identidad</label>
-          <select
-            value={meId}
-            onChange={(e) => {
-              setMeId(e.target.value);
-              localStorage.setItem('meId', e.target.value);
-            }}
-          >
-            {workspace.members.map((m) => (
-              <option key={m.id} value={m.id}>
-                {m.displayName} ({m.type})
-              </option>
-            ))}
-          </select>
+          <span className="me-label">{session.member.displayName}</span>
+          <button className="logout" onClick={handleLogout}>
+            Cerrar sesión
+          </button>
         </div>
       </aside>
 
@@ -168,7 +210,7 @@ export function App() {
         </div>
         <div className="input-row">
           <input
-            placeholder={me ? `Mensaje a #${activeChannel?.name ?? ''} como ${me.displayName}` : 'esperando identidad...'}
+            placeholder={`Mensaje a #${activeChannel?.name ?? ''} como ${session.member.displayName}`}
             value={draft}
             onChange={(e) => setDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -177,9 +219,9 @@ export function App() {
                 send();
               }
             }}
-            disabled={!me || !activeChannel}
+            disabled={!activeChannel}
           />
-          <button onClick={send} disabled={!draft.trim() || !me || !activeChannel}>
+          <button onClick={send} disabled={!draft.trim() || !activeChannel}>
             Enviar
           </button>
         </div>
