@@ -1,19 +1,21 @@
 import { useEffect, useRef } from 'react';
 import { FixedSizeList, type ListChildComponentProps } from 'react-window';
 import { MessageItem } from './MessageItem';
-import type { Member, Message } from './types';
+import type { ButtonBlock, Member, Message } from './types';
 
 interface Props {
   messages: Message[];
   authorById: Map<string, Member>;
   height: number;
+  resolvedIds: Set<string>;
+  onAction?: (msg: Message, block: ButtonBlock) => void;
 }
 
-// Heuristica: alto fijo razonable. Mensajes con toolCalls grandes pueden
-// clippearse; aceptable para MVP. Para v2: VariableSizeList con medicion.
-const ROW_HEIGHT = 80;
+// Alto fijo. Subido a 140 para acomodar 1 toolCall + 1 fila de botones.
+// Pendiente: pasar a VariableSizeList con medicion dinamica.
+const ROW_HEIGHT = 140;
 
-export function MessageList({ messages, authorById, height }: Props) {
+export function MessageList({ messages, authorById, height, resolvedIds, onAction }: Props) {
   const listRef = useRef<FixedSizeList>(null);
 
   useEffect(() => {
@@ -37,9 +39,18 @@ export function MessageList({ messages, authorById, height }: Props) {
       itemSize={ROW_HEIGHT}
       overscanCount={5}
     >
-      {({ index, style }: ListChildComponentProps) => (
-        <MessageItem msg={messages[index]} authorById={authorById} style={style} />
-      )}
+      {({ index, style }: ListChildComponentProps) => {
+        const m = messages[index];
+        return (
+          <MessageItem
+            msg={m}
+            authorById={authorById}
+            style={style}
+            resolved={resolvedIds.has(m.id)}
+            onAction={onAction}
+          />
+        );
+      }}
     </FixedSizeList>
   );
 }

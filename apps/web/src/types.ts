@@ -38,10 +38,21 @@ export interface ToolCall {
   type?: string;
 }
 
+export interface ButtonBlock {
+  type: 'button';
+  actionId: string;
+  label: string;
+  value: string;
+  style?: 'primary' | 'danger' | 'default';
+  prompt?: string;
+}
+
 export interface MessageMetadata {
   traceId?: string | null;
   toolCalls?: ToolCall[];
-  blocks?: unknown[];
+  blocks?: ButtonBlock[];
+  /** Solo en mensajes USER autogenerados por click de boton. */
+  action?: { messageId: string; actionId: string; value: string };
 }
 
 export interface Message {

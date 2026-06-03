@@ -35,8 +35,40 @@ const validarFacturaTool = tool(
   },
 );
 
+// --- Tool especial: pedirle confirmacion al humano ---
+// El agente la llama cuando quiere bajar el riesgo antes de ejecutar algo.
+// Devuelve un marker JSON; el AgentRunner lo intercepta para empujar los
+// blocks (botones) en metadata.blocks del mensaje del agente.
+const solicitarConfirmacionSchema = z.object({
+  prompt: z.string().describe('Pregunta a mostrarle al humano arriba de los botones'),
+  options: z
+    .array(
+      z.object({
+        label: z.string(),
+        value: z.string(),
+        style: z.enum(['primary', 'danger', 'default']).optional(),
+      }),
+    )
+    .min(1)
+    .describe('Botones: label visible, value que vuelve al agente, style opcional'),
+});
+const solicitarConfirmacionTool = tool(
+  async ({ prompt, options }: z.infer<typeof solicitarConfirmacionSchema>) => {
+    return JSON.stringify({ awaiting_human: true, prompt, options });
+  },
+  {
+    name: 'solicitar_confirmacion',
+    description:
+      'Pide confirmacion al humano antes de proceder con una accion. Usala cuando vas a ' +
+      'ejecutar algo con efecto (aprobar, enviar, cobrar). Devuelve un marker; en el ' +
+      'mismo turno terminas tu respuesta y esperas el siguiente mensaje del humano.',
+    schema: solicitarConfirmacionSchema as any,
+  },
+);
+
 const TOOL_REGISTRY: Record<string, any> = {
   validar_factura: validarFacturaTool,
+  solicitar_confirmacion: solicitarConfirmacionTool,
 };
 
 interface InvokeArgs {
@@ -72,18 +104,69 @@ export class AgentRunner {
       })),
     });
 
-    const last = out.messages[out.messages.length - 1];
+    // Buscar el ultimo mensaje del agente que tenga TEXTO real. Si el ciclo
+    // termino en tool_use puro (ej: solicitar_confirmacion), last.content
+    // puede ser '' o un array de content blocks sin text.
+    const extractText = (m: any): string => {
+      const c = m?.content;
+      if (typeof c === 'string') return c;
+      if (Array.isArray(c)) {
+        return c
+          .filter((b: any) => b?.type === 'text' && typeof b.text === 'string')
+          .map((b: any) => b.text)
+          .join('\n');
+      }
+      return '';
+    };
+    let text = '';
+    for (let i = out.messages.length - 1; i >= 0; i--) {
+      const m: any = out.messages[i];
+      // Solo mensajes del assistant (no tool results)
+      if (m.constructor?.name === 'AIMessage' || m._getType?.() === 'ai' || m.role === 'assistant') {
+        const t = extractText(m);
+        if (t.trim()) {
+          text = t;
+          break;
+        }
+      }
+    }
 
     // Extraer las tool calls que ejecutó para mostrarlas en el thread
     const toolCalls = out.messages
       .filter((m: any) => m.tool_calls?.length)
       .flatMap((m: any) => m.tool_calls);
 
+    // Si la ultima ronda ejecuto solicitar_confirmacion, levantar los botones
+    // a result.blocks para que el frontend los renderee debajo del mensaje.
+    const blocks: any[] = [];
+    const confirmations = toolCalls.filter((tc: any) => tc.name === 'solicitar_confirmacion');
+    for (const tc of confirmations) {
+      const args = tc.args ?? {};
+      const opts = Array.isArray(args.options) ? args.options : [];
+      for (const opt of opts) {
+        blocks.push({
+          type: 'button',
+          actionId: `${tc.id ?? tc.name}:${opt.value}`,
+          label: opt.label,
+          value: opt.value,
+          style: opt.style ?? 'default',
+          prompt: args.prompt,
+        });
+      }
+    }
+
+    // Fallback: si el agente termino con solicitar_confirmacion sin texto,
+    // mostramos el prompt de la confirmacion para que el humano vea algo.
+    if (!text && blocks.length > 0) {
+      text = blocks[0].prompt ?? '(esperando confirmacion)';
+    }
+    if (!text) text = '(sin respuesta)';
+
     return {
-      text: last.content as string,
+      text,
       traceId: (out as any).runId ?? null,
       toolCalls,
-      blocks: [], // acá podés inyectar botones de confirmación a futuro
+      blocks,
     };
   }
 }

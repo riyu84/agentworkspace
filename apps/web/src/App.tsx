@@ -2,7 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Socket } from 'socket.io-client';
 import { api, WORKSPACE_ID } from './api';
 import { makeSocket } from './socket';
-import type { Channel, Member, Message, Workspace } from './types';
+import type { ButtonBlock, Channel, Member, Message, Workspace } from './types';
 import { MessageList } from './MessageList';
 import { Login } from './Login';
 import { MembersList } from './MembersList';
@@ -161,6 +161,26 @@ export function App() {
 
   const activeChannel = workspace?.channels.find((c) => c.id === activeChannelId) ?? null;
 
+  // Un mensaje con botones queda "resolved" cuando aparece un USER posterior
+  // cuyo metadata.action.messageId apunta a el.
+  const resolvedIds = useMemo(() => {
+    const s = new Set<string>();
+    for (const m of messages) {
+      const act = m.metadata?.action;
+      if (act?.messageId) s.add(act.messageId);
+    }
+    return s;
+  }, [messages]);
+
+  const handleAction = (msg: Message, block: ButtonBlock) => {
+    if (!socketRef.current) return;
+    socketRef.current.emit('action:submit', {
+      messageId: msg.id,
+      actionId: block.actionId,
+      value: block.value,
+    });
+  };
+
   const typingNames = useMemo(() => {
     return [...typingAgents]
       .map((id) => authorById.get(id)?.displayName ?? id.slice(0, 6))
@@ -226,7 +246,13 @@ export function App() {
           {activeChannel?.topic && <span className="topic">{activeChannel.topic}</span>}
         </header>
         <div className="messages">
-          <MessageList messages={messages} authorById={authorById} height={listHeight} />
+          <MessageList
+            messages={messages}
+            authorById={authorById}
+            height={listHeight}
+            resolvedIds={resolvedIds}
+            onAction={handleAction}
+          />
         </div>
         <div className="typing">
           {typingAgents.size > 0 && `${typingNames} está${typingAgents.size > 1 ? 'n' : ''} pensando…`}

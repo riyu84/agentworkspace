@@ -16,6 +16,15 @@ export interface CreateMessageInput {
   metadata?: Prisma.InputJsonValue;
 }
 
+interface ActionBlock {
+  type: 'button';
+  actionId: string;
+  label: string;
+  value: string;
+  style?: 'primary' | 'danger' | 'default';
+  prompt?: string;
+}
+
 @Injectable()
 export class MessageService {
   constructor(private readonly prisma: PrismaService) {}
@@ -31,5 +40,23 @@ export class MessageService {
         metadata: input.metadata,
       },
     });
+  }
+
+  findById(id: string): Promise<Message | null> {
+    return this.prisma.message.findUnique({ where: { id } });
+  }
+
+  findByIdWithAuthor(id: string) {
+    return this.prisma.message.findUnique({
+      where: { id },
+      include: { author: true },
+    });
+  }
+
+  /** Busca el button block dentro de metadata.blocks de un mensaje. */
+  async findActionBlock(msg: Message, actionId: string): Promise<ActionBlock | null> {
+    const meta = msg.metadata as { blocks?: ActionBlock[] } | null;
+    const block = meta?.blocks?.find((b) => b.type === 'button' && b.actionId === actionId);
+    return block ?? null;
   }
 }

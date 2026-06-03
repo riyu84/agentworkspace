@@ -103,4 +103,40 @@ export class ChatGateway implements OnGatewayConnection, OnGatewayDisconnect {
     // 3. Disparar a los agentes ASÍNCRONAMENTE. No esperamos al LLM.
     this.eventBus.dispatchToAgents(saved);
   }
+
+  // Click en un boton de confirmacion. Persiste la respuesta del humano
+  // como un mensaje USER (parentId al mensaje del agente con los botones)
+  // y vuelve a despertar al orchestrator para que el agente continue.
+  @SubscribeMessage('action:submit')
+  async onAction(
+    @ConnectedSocket() c: Socket,
+    @MessageBody() d: { messageId: string; actionId: string; value: string },
+  ) {
+    const memberId = c.data.memberId;
+    if (!memberId) return;
+    const original = await this.messages.findByIdWithAuthor(d.messageId);
+    if (!original) {
+      this.logger.warn(`action:submit con messageId desconocido: ${d.messageId}`);
+      return;
+    }
+    const block = await this.messages.findActionBlock(original, d.actionId);
+    const labelText = block?.label ?? d.value;
+
+    // Sintetizamos mention al autor original (el agente) para que el orchestrator
+    // lo despierte vía extractMentions.
+    const mention = `@${original.author.displayName}`;
+    const saved = await this.messages.create({
+      channelId: original.channelId,
+      authorId: memberId,
+      content: `${mention} [respuesta a "${block?.prompt ?? 'confirmacion'}"]: ${labelText}`,
+      parentId: original.id,
+      role: 'USER',
+      metadata: {
+        action: { messageId: d.messageId, actionId: d.actionId, value: d.value },
+      },
+    });
+
+    this.server.to(`channel:${original.channelId}`).emit('message', saved);
+    this.eventBus.dispatchToAgents(saved);
+  }
 }

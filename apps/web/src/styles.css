@@ -101,6 +101,35 @@ body {
 .tool-call .tool-name { color: #23a55a; font-weight: 600; }
 .tool-call pre { margin: 4px 0 0; color: #b5bac1; white-space: pre-wrap; word-break: break-all; }
 
+.blocks {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.blocks button {
+  background: #4e5058;
+  color: #fff;
+  border: none;
+  padding: 6px 14px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+}
+.blocks button:hover:not(:disabled) { background: #6d6f78; }
+.blocks button.primary { background: #5865f2; }
+.blocks button.primary:hover:not(:disabled) { background: #4752c4; }
+.blocks button.danger { background: #4e5058; color: #f23f42; border: 1px solid #f23f42; }
+.blocks button.danger:hover:not(:disabled) { background: #f23f42; color: #fff; }
+.blocks button:disabled { opacity: 0.5; cursor: not-allowed; }
+.blocks .resolved-tag {
+  align-self: center;
+  font-size: 11px;
+  color: #80848e;
+  margin-left: 4px;
+}
+
 .typing {
   padding: 4px 16px;
   font-size: 12px;

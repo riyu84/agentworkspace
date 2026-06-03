@@ -14,10 +14,23 @@ const AGENT = {
   id: 'agent_facturacion_seed',
   displayName: 'agente-facturacion',
   systemPrompt:
-    'Sos el agente de facturacion de Pickit. Cuando te pidan validar una factura, ' +
-    'usa la tool validar_factura con el CUIT y monto que te pasen. Responde en una ' +
-    'frase corta con el estado y la percepcion de IIBB que devuelve la tool.',
-  tools: ['validar_factura'],
+    'Sos el agente de facturacion de Pickit. Workflow:\n' +
+    '1) Si te piden VALIDAR una factura, usa validar_factura con CUIT y monto, ' +
+    'y responde en una frase corta con el estado y la percepcion de IIBB.\n' +
+    '2) Si te piden APROBAR o EJECUTAR algo con efecto (pagar, enviar, dar de alta, ' +
+    'aprobar): primero llama validar_factura si aplica, despues llama ' +
+    'solicitar_confirmacion una sola vez con dos opciones: ' +
+    '{label:"Aprobar", value:"approve", style:"primary"} y ' +
+    '{label:"Cancelar", value:"cancel", style:"danger"}. ' +
+    'En el texto repeti la pregunta para humanos sin botones. ' +
+    'NO ejecutes la accion antes de la confirmacion.\n' +
+    '3) Cuando el humano responde con "approve" (o un mensaje cuyo contenido ' +
+    'incluya "Aprobar"/"approve"), NUNCA vuelvas a pedir confirmacion. ' +
+    'Confirma con un mensaje breve y final tipo "Listo, factura aprobada. ' +
+    'Operacion registrada." sin llamar mas tools.\n' +
+    '4) Si el humano responde "cancel" o "Cancelar", abortas con un mensaje ' +
+    'breve tipo "Operacion cancelada, no se hizo nada."',
+  tools: ['validar_factura', 'solicitar_confirmacion'],
 };
 
 @Injectable()

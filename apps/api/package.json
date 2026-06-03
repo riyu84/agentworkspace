@@ -14,7 +14,9 @@
     "smoke:v2-auth": "tsx scripts/smoke-v2-auth.ts",
     "smoke:v2-auth-ui": "tsx scripts/smoke-v2-auth-ui.ts",
     "smoke:v2-presence": "tsx scripts/smoke-v2-presence.ts",
-    "smoke:v2-presence-ui": "tsx scripts/smoke-v2-presence-ui.ts"
+    "smoke:v2-presence-ui": "tsx scripts/smoke-v2-presence-ui.ts",
+    "smoke:v2-confirm": "tsx scripts/smoke-v2-confirm.ts",
+    "smoke:v2-confirm-ui": "tsx scripts/smoke-v2-confirm-ui.ts"
   },
   "dependencies": {
     "@langchain/anthropic": "^0.3.11",

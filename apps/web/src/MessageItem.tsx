@@ -1,12 +1,14 @@
-import type { Member, Message } from './types';
+import type { ButtonBlock, Member, Message } from './types';
 
 interface Props {
   msg: Message;
   authorById: Map<string, Member>;
   style?: React.CSSProperties;
+  resolved?: boolean;
+  onAction?: (msg: Message, block: ButtonBlock) => void;
 }
 
-export function MessageItem({ msg, authorById, style }: Props) {
+export function MessageItem({ msg, authorById, style, resolved, onAction }: Props) {
   const author = msg.author ?? authorById.get(msg.authorId);
   const isAgent = msg.role === 'AGENT' || author?.type === 'AGENT';
   const isSystem = msg.role === 'SYSTEM';
@@ -14,6 +16,7 @@ export function MessageItem({ msg, authorById, style }: Props) {
   const initial = displayName[0]?.toUpperCase() ?? '?';
   const ts = new Date(msg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const toolCalls = msg.metadata?.toolCalls ?? [];
+  const blocks = (msg.metadata?.blocks ?? []) as ButtonBlock[];
 
   return (
     <div className={`msg ${isAgent ? 'agent' : ''} ${isSystem ? 'system' : ''}`} style={style}>
@@ -32,6 +35,21 @@ export function MessageItem({ msg, authorById, style }: Props) {
                 <pre>{JSON.stringify(tc.args, null, 2)}</pre>
               </div>
             ))}
+          </div>
+        )}
+        {blocks.length > 0 && (
+          <div className="blocks">
+            {blocks.map((b) => (
+              <button
+                key={b.actionId}
+                className={b.style ?? 'default'}
+                disabled={resolved || !onAction}
+                onClick={() => onAction?.(msg, b)}
+              >
+                {b.label}
+              </button>
+            ))}
+            {resolved && <span className="resolved-tag">respondido</span>}
           </div>
         )}
       </div>
