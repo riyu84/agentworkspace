@@ -11,8 +11,14 @@ import { z } from 'zod';
 
 // --- Ejemplo de tool real para Pickit ---
 // El agente de #facturacion valida Ingresos Brutos / Percepciones.
+// Cast del schema para evitar TS2589 (recursion infinita en el inference de
+// zod schemas + langchain tool()). Runtime intacto.
+const validarFacturaSchema = z.object({
+  cuit: z.string().describe('CUIT del proveedor'),
+  monto: z.number().describe('Monto neto de la factura'),
+});
 const validarFacturaTool = tool(
-  async ({ cuit, monto }) => {
+  async ({ cuit, monto }: z.infer<typeof validarFacturaSchema>) => {
     // Acá iría la llamada a tu MCP server / microservicio de facturación
     // const res = await fetch(`${MCP_FACTURACION}/validate`, {...})
     return JSON.stringify({
@@ -25,10 +31,7 @@ const validarFacturaTool = tool(
   {
     name: 'validar_factura',
     description: 'Valida una factura y calcula percepciones de Ingresos Brutos por CUIT.',
-    schema: z.object({
-      cuit: z.string().describe('CUIT del proveedor'),
-      monto: z.number().describe('Monto neto de la factura'),
-    }),
+    schema: validarFacturaSchema as any,
   },
 );
 
