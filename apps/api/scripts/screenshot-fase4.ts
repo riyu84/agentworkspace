@@ -36,8 +36,13 @@ async function main() {
   await page.fill('.input-row input', '@agente-facturacion validá CUIT 20-12345678-9 por $10000');
   await page.locator('.input-row button').click();
 
-  // dar tiempo al agent:typing
-  await page.waitForTimeout(2500);
+  // esperar la respuesta real del agente (con tool-call rendereado)
+  try {
+    await page.waitForSelector('.tool-call', { timeout: 30_000 });
+    await page.waitForTimeout(500);
+  } catch {
+    console.warn('   ! warning: timeout esperando .tool-call');
+  }
 
   await page.screenshot({ path: OUT, fullPage: false });
   console.log(`screenshot -> ${OUT}`);
