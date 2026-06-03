@@ -32,4 +32,5 @@ export const api = {
     get<Message[]>(`/channels/${channelId}/messages?limit=${limit}`),
   login: (email: string) => post<LoginResponse>('/auth/login', { email }),
   me: (token: string) => get<MeResponse>('/auth/me', token),
+  presence: () => get<{ online: string[] }>('/presence'),
 };

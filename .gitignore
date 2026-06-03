@@ -7,3 +7,4 @@ dist
 .pnpm-store
 apps/api/prisma/generated
 *.tsbuildinfo
+dump.rdb

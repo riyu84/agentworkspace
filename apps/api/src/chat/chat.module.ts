@@ -4,9 +4,10 @@ import { MessageService } from '../message.service';
 import { PrismaService } from '../prisma.service';
 import { AgentEventBus } from '../agent/agent-event-bus.service';
 import { AuthModule } from '../auth/auth.module';
+import { PresenceModule } from '../presence/presence.module';
 
 @Module({
-  imports: [AuthModule],
+  imports: [AuthModule, PresenceModule],
   providers: [ChatGateway, MessageService, PrismaService, AgentEventBus],
   exports: [MessageService, PrismaService, AgentEventBus],
 })

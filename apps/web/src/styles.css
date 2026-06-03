@@ -198,3 +198,44 @@ body {
   margin-top: 4px;
 }
 .sidebar .picker .logout:hover { color: #fff; border-color: #80848e; }
+
+.sidebar .members-section {
+  border-top: 1px solid #1e1f22;
+  padding: 8px 0;
+  max-height: 35vh;
+  overflow-y: auto;
+}
+.sidebar .members-section h3 {
+  margin: 0 0 6px;
+  padding: 0 16px;
+  font-size: 11px;
+  text-transform: uppercase;
+  color: #80848e;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+.sidebar .member-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 16px;
+  color: #b5bac1;
+  font-size: 13px;
+}
+.sidebar .member-row.offline { color: #6d7079; }
+.sidebar .member-row .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #6d7079;
+  flex-shrink: 0;
+}
+.sidebar .member-row.online .dot { background: #23a55a; }
+.sidebar .member-row .agent-tag {
+  font-size: 9px;
+  background: #23a55a;
+  color: #fff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+}

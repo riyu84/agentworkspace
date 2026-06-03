@@ -5,6 +5,7 @@ import { makeSocket } from './socket';
 import type { Channel, Member, Message, Workspace } from './types';
 import { MessageList } from './MessageList';
 import { Login } from './Login';
+import { MembersList } from './MembersList';
 
 const TYPING_TTL_MS = 8000;
 const LS_TOKEN = 'auth.token';
@@ -43,6 +44,7 @@ export function App() {
   const [activeChannelId, setActiveChannelId] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [typingAgents, setTypingAgents] = useState<Set<string>>(new Set());
+  const [onlineIds, setOnlineIds] = useState<Set<string>>(new Set());
   const [draft, setDraft] = useState('');
   const [listHeight, setListHeight] = useState(500);
   const socketRef = useRef<Socket | null>(null);
@@ -57,7 +59,7 @@ export function App() {
     });
   }, [session?.token]);
 
-  // Cargar workspace una vez autenticado.
+  // Cargar workspace + snapshot inicial de presence una vez autenticado.
   useEffect(() => {
     if (!session) return;
     api
@@ -69,6 +71,10 @@ export function App() {
         }
       })
       .catch((e) => setError(String(e)));
+    api
+      .presence()
+      .then(({ online }) => setOnlineIds(new Set(online)))
+      .catch(() => undefined);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [session?.token]);
 
@@ -101,6 +107,22 @@ export function App() {
     s.on('auth:error', () => {
       clearSession();
       setSession(null);
+    });
+    s.on('presence:online', ({ memberId }: { memberId: string }) => {
+      setOnlineIds((prev) => {
+        if (prev.has(memberId)) return prev;
+        const next = new Set(prev);
+        next.add(memberId);
+        return next;
+      });
+    });
+    s.on('presence:offline', ({ memberId }: { memberId: string }) => {
+      setOnlineIds((prev) => {
+        if (!prev.has(memberId)) return prev;
+        const next = new Set(prev);
+        next.delete(memberId);
+        return next;
+      });
     });
 
     return () => {
@@ -188,6 +210,7 @@ export function App() {
             </button>
           ))}
         </div>
+        <MembersList members={workspace.members} onlineIds={onlineIds} />
         <div className="picker">
           <label>Identidad</label>
           <span className="me-label">{session.member.displayName}</span>
